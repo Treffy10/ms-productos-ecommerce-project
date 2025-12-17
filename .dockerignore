@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pytest_cache/
+*.coverage
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Variables de entorno
+.env
+
+# Base de datos local
+db.sqlite3
+
+# Logs
+*.log
+
+# Node (si aplica)
+node_modules/
+
+# Tests y docs (opcional)
+tests/
+docs/
