@@ -51,13 +51,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \${db_user} -d \${db_name}"]
+      test: ["CMD-SHELL", "pg_isready -U ${db_user} -d ${db_name}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   app:
-    image: \${docker_image}
+    image: ${docker_image}
     restart: always
     depends_on:
       db:
