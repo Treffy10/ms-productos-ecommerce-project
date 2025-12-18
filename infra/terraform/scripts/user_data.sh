@@ -45,19 +45,19 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_DB: \${DB_NAME}
-      POSTGRES_USER: \${DB_USER}
-      POSTGRES_PASSWORD: \${DB_PASSWORD}
+      POSTGRES_DB: \${db_name}
+      POSTGRES_USER: \${db_user}
+      POSTGRES_PASSWORD: \${db_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \${DB_USER} -d \${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U \${db_user} -d \${db_name}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   app:
-    image: \${DOCKER_IMAGE}
+    image: \${docker_image}
     restart: always
     depends_on:
       db:
