@@ -11,8 +11,20 @@ provider "aws" {
   region = "us-east-1" # <--- CAMBIA ESTO por tu región favorita de AWS
 }
 
+# Esto busca la última imagen de Ubuntu 24.04 automáticamente
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical (el creador de Ubuntu)
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+  }
+}
+
 resource "aws_instance" "app_server" {
-  ami           = "ami-0e2c8ccd4e022c147" # AMI actualizada de Ubuntu 24.04 LTS para us-east-1
+  # Ahora usamos el ID que Terraform encontró arriba
+  ami           = data.aws_ami.ubuntu.id
   instance_type = "t3.micro"             # La opción gratuita (Free Tier)
   key_name      = "clavesecreta12345"         # El nombre de tu par de llaves en AWS
 
@@ -60,4 +72,9 @@ resource "aws_security_group" "app_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+# Para que GitHub te diga la IP al terminar
+output "server_public_ip" {
+  value = aws_instance.app_server.public_ip
 }
