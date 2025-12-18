@@ -1,3 +1,16 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0" # O la versión que prefieras
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1" # <--- CAMBIA ESTO por tu región favorita de AWS
+}
+
 resource "aws_instance" "app_server" {
   ami           = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS (Verifica tu región)
   instance_type = "t2.micro"             # La opción gratuita (Free Tier)
