@@ -1,52 +1,71 @@
 #!/bin/bash
-set -e
+# ==========================================================
+# SCRIPT DE APROVISIONAMIENTO PARA MICROSERVICIO PRODUCTOS
+# ==========================================================
 
-# --- 1. Instalación de Docker y Herramientas ---
-apt-get update
-apt-get install -y git nginx docker.io docker-compose
-systemctl start docker
-systemctl enable docker
-usermod -aG docker ubuntu
+# 1. LIMPIEZA DE NGINX (Para evitar conflictos en puerto 80)
+echo "Limpiando Nginx preinstalado..."
+sudo apt-get update
+sudo apt-get remove -y nginx nginx-common
+sudo apt-get autoremove -y
+sudo systemctl stop nginx || true
 
-# --- 2. Preparación de la Carpeta de la App ---
+# 2. INSTALACIÓN DE DOCKER Y DEPENDENCIAS
+echo "Instalando Docker..."
+sudo apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+# Iniciar Docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# 3. PREPARAR DIRECTORIO DE LA APP
 mkdir -p /home/ubuntu/app
 cd /home/ubuntu/app
 
-# --- 3. Crear el archivo .env dinámicamente ---
-# Terraform inyectará estas variables aquí
-cat > /home/ubuntu/app/.env <<EOF
+# 4. CREAR ARCHIVO .ENV (Inyectado por Terraform)
+cat > .env <<EOF
 DB_NAME=${db_name}
 DB_USER=${db_user}
 DB_PASSWORD=${db_password}
 DB_HOST=db
-SECRET_KEY=${django_secret_key}
+DB_PORT=5432
+DJANGO_SECRET_KEY=${django_secret_key}
 DOCKER_IMAGE=${docker_image}
 EOF
 
-# --- 4. Crear el docker-compose.yml en el servidor ---
-cat > /home/ubuntu/app/docker-compose.yml <<EOF
+# 5. CREAR DOCKER-COMPOSE.YML DINÁMICO
+cat > docker-compose.yml <<EOF
 version: '3.8'
-
 services:
   db:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_DB: \${db_name}
-      POSTGRES_USER: \${db_user}
-      POSTGRES_PASSWORD: \${db_password}
+      POSTGRES_DB: \${DB_NAME}
+      POSTGRES_USER: \${DB_USER}
+      POSTGRES_PASSWORD: \${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \${DB_USER} -d \${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
-    image: \${docker_image}
+    image: \${DOCKER_IMAGE}
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "80:8000"
     command: >
       sh -c "python manage.py migrate --noinput &&
              gunicorn --bind 0.0.0.0:8000 servicio_productos.wsgi:application"
@@ -55,24 +74,6 @@ volumes:
   postgres_data:
 EOF
 
-# --- 5. Configurar Nginx como Proxy Inverso ---
-cat > /etc/nginx/sites-available/django <<EOF
-server {
-    listen 80;
-    server_name _;
-
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
-}
-EOF
-
-ln -sf /etc/nginx/sites-available/django /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
-systemctl restart nginx
-
-# --- 6. Lanzar la aplicación ---
-# Esto descarga las imágenes de Docker Hub y levanta todo
-docker-compose --env-file /home/ubuntu/app/.env up -d
+# 6. LEVANTAR EL MICROSERVICIO
+echo "Levantando contenedores..."
+sudo docker compose up -d
