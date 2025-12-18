@@ -12,8 +12,8 @@ provider "aws" {
 }
 
 resource "aws_instance" "app_server" {
-  ami           = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS (Verifica tu región)
-  instance_type = "t2.micro"             # La opción gratuita (Free Tier)
+  ami           = "ami-0e2c8ccd4e022c147" # AMI actualizada de Ubuntu 24.04 LTS para us-east-1
+  instance_type = "t3.micro"             # La opción gratuita (Free Tier)
   key_name      = "clavesecreta12345"         # El nombre de tu par de llaves en AWS
 
   # Seguridad: Abrir puertos 22 (SSH) y 80 (HTTP)
