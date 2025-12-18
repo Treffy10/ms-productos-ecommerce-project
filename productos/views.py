@@ -21,9 +21,15 @@ def productos_view(request):
 
     elif request.method == 'POST':
         try:
-            producto = ProductoService.crear_producto(request.data)
-            serializer = ProductoSerializer(producto)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Deserializar con el serializer para validar y convertir campos
+            serializer = ProductoSerializer(data=request.data)
+            if serializer.is_valid():
+                # El serializer convierte categoria_id a categoria
+                producto = ProductoService.crear_producto(serializer.validated_data)
+                serializer = ProductoSerializer(producto)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         

@@ -20,11 +20,21 @@ class ProductoService:
             raise ValueError("El precio no puede ser negativo")
 
         # 🔄 Validar categoría usando el Django ORM (pk)
-        categoria_id = datos.get('categoria')
-        try:
-            # Esto lanzará ObjectDoesNotExist si no encuentra la PK
-            Categoria.objects.get(pk=categoria_id) 
-        except ObjectDoesNotExist:
+        categoria = datos.get('categoria')
+        
+        # Debug: Ver qué tipo de dato es
+        # print(f"DEBUG - categoria type: {type(categoria)}, value: {categoria}")
+        
+        # Manejar si viene como ID o como objeto
+        if isinstance(categoria, int):
+            try:
+                Categoria.objects.get(pk=categoria)
+            except ObjectDoesNotExist:
+                raise ValueError("Categoría no encontrada")
+        elif isinstance(categoria, Categoria):
+            # Ya es un objeto, validar que existe
+            pass
+        else:
             raise ValueError("Categoría no encontrada")
             
         # --- Persistencia ---

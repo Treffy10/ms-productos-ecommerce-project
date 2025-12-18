@@ -1,11 +1,18 @@
 FROM python:3.11-slim
+
+# Evita que Python genere archivos .pyc y permite ver logs en tiempo real
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Instalar dependencias del sistema para Postgres
+RUN apt-get update && apt-get install -y libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
-COPY . .
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8000
+COPY . /app/
 
-CMD ["gunicorn", "servicio_productos.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Comando para correr la app con Gunicorn (más profesional para AWS)
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "servicio_productos.wsgi:application"]

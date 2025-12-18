@@ -24,9 +24,10 @@ db.sqlite3
 # Logs
 *.log
 
-# Node (si aplica)
-node_modules/
+# Terraform
+.terraform/
+*.exe
+terraform.tfstate*
 
-# Tests y docs (opcional)
-tests/
-docs/
+# Docker
+docker-compose.yml

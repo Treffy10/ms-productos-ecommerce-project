@@ -1,36 +1,50 @@
-terraform {
-  required_version = ">= 1.0"
+resource "aws_instance" "app_server" {
+  ami           = "ami-0c7217cdde317cfec" # Ubuntu 22.04 LTS (Verifica tu región)
+  instance_type = "t2.micro"             # La opción gratuita (Free Tier)
+  key_name      = "clavesecreta12345"         # El nombre de tu par de llaves en AWS
 
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
+  # Seguridad: Abrir puertos 22 (SSH) y 80 (HTTP)
+  vpc_security_group_ids = [aws_security_group.app_sg.id]
 
-  backend "s3" {
-    bucket         = "mi-bucket-terraform-ecommerce-project"
-    key            = "infra/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-lock"
-  }
-}
-
-
-provider "aws" {
-  region = "us-east-1"  
-}
-
-resource "aws_instance" "ms_productos" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
-  key_name      = var.key_name
-
-  vpc_security_group_ids = [aws_security_group.ms_productos_sg.id]
-
-  user_data = file("user_data.sh")
+  # INYECCIÓN DE VARIABLES AL SCRIPT
+  user_data = templatefile("${path.module}/scripts/user_data.sh", {
+    db_name           = var.db_name
+    db_user           = var.db_user
+    db_password       = var.db_password
+    django_secret_key = var.django_secret_key
+    docker_image      = var.docker_image
+  })
 
   tags = {
-    Name = "ms-productos"
+    Name = "ServicioProductos"
+  }
+}
+
+resource "aws_security_group" "app_sg" {
+  name        = "productos-sg"
+  description = "Permitir HTTP y SSH"
+
+  # Puerto 80 para que tu App sea visible en la web
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Puerto 22 para que puedas entrar por SSH si es necesario
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Por seguridad, podrías poner solo tu IP aquí
+  }
+
+  # Permitir que el servidor salga a internet (para bajar Docker, etc.)
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
