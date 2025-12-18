@@ -28,6 +28,7 @@ db.sqlite3
 .terraform/
 *.exe
 terraform.tfstate*
+.terraform.lock.hcl
 
 # Docker
 docker-compose.yml

@@ -45,9 +45,9 @@ services:
     image: postgres:15-alpine
     restart: always
     environment:
-      POSTGRES_DB: \${db_name}
-      POSTGRES_USER: \${db_user}
-      POSTGRES_PASSWORD: \${db_password}
+      POSTGRES_DB: ${db_name}
+      POSTGRES_USER: ${db_user}
+      POSTGRES_PASSWORD: ${db_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
